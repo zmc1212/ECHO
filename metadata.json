@@ -1,0 +1,5 @@
+{
+  "name": "Protocol: ECHO (回声协议)",
+  "description": "A high-fidelity Cassette Futurism interactive fiction engine. Immerse yourself in a retro-sci-fi mystery via a simulated analog terminal interface powered by Gemini.",
+  "requestFramePermissions": []
+}
