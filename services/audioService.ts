@@ -64,6 +64,19 @@ export class AudioService {
     this.playTone(150, 'sawtooth', 0.4, 0.5);
     setTimeout(() => this.playTone(120, 'sawtooth', 0.4, 0.5), 200);
   }
+
+  playCardFlip() {
+    // Mechanical latch sound
+    this.playTone(100, 'square', 0.05, 0.3);
+    setTimeout(() => this.playTone(600, 'sawtooth', 0.1, 0.1), 50);
+  }
+
+  playReveal() {
+    // Data decrypt sound
+    this.playTone(1200, 'sine', 0.1, 0.2);
+    setTimeout(() => this.playTone(2000, 'square', 0.3, 0.1), 100);
+    setTimeout(() => this.playTone(800, 'sawtooth', 0.4, 0.1), 200);
+  }
 }
 
 export const audioService = new AudioService();

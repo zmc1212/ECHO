@@ -7,7 +7,7 @@ const responseSchema = {
   properties: {
     narrative: {
       type: Type.STRING,
-      description: "The story description, keep it atmospheric and under 150 words.",
+      description: "The story description in Simplified Chinese. Keep it atmospheric, sci-fi/horror, max 100 words.",
     },
     choices: {
       type: Type.ARRAY,
@@ -15,10 +15,10 @@ const responseSchema = {
         type: Type.OBJECT,
         properties: {
           id: { type: Type.STRING },
-          text: { type: Type.STRING, description: "The action text shown on the button" },
+          text: { type: Type.STRING, description: "Action text on button (Chinese)" },
           type: { 
             type: Type.STRING, 
-            description: "The category of action",
+            description: "Action category",
             enum: ["action", "investigate", "danger"] 
           }
         },
@@ -31,7 +31,19 @@ const responseSchema = {
       properties: {
         health: { type: Type.NUMBER },
         sanity: { type: Type.NUMBER },
-        location: { type: Type.STRING }
+        location: { type: Type.STRING, description: "Current location name in Chinese" }
+      }
+    },
+    item_update: {
+      type: Type.ARRAY,
+      description: "Items added to inventory",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          name: { type: Type.STRING, description: "Item name in Chinese" },
+          quantity: { type: Type.NUMBER }
+        }
       }
     }
   },
@@ -43,13 +55,14 @@ You are "MOTHER", the central AI of colony station "Talos-IV" (Year 1996, Alt-Ti
 Genre: Cassette Futurism / Cosmic Horror.
 Language: Simplified Chinese (zh-CN).
 
-Your goal is to run a text adventure.
+Your goal is to run a text adventure game.
 1. Output MUST be valid JSON matching the schema.
-2. Narrative: Dry, technical, atmospheric. 
-3. Choices: Provide 2-4 distinct choices.
-4. Stats: Update health/sanity if the user takes damage or sees something scary.
+2. Narrative: Use 'Noto Serif SC' style formal but atmospheric Chinese. Dry, technical, yet unsettling.
+3. Choices: Provide 2-4 distinct choices in Chinese.
+4. Items: If player finds something, include it in item_update with a Chinese name (e.g., "旧式磁带", "生锈的撬棍", "加密数据盘").
+5. Stats: Update health/sanity if damage taken or horror witnessed. Update location name in Chinese.
 
-Start: The user wakes up in a cryo-pod. Alarms are ringing.
+Start Scenario: The user wakes up in a cryo-pod. Alarms are ringing. Cold mist everywhere.
 `;
 
 export class GeminiService {
@@ -66,7 +79,7 @@ export class GeminiService {
       model: "gemini-2.5-flash",
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.7,
+        temperature: 0.8,
         responseMimeType: "application/json",
         responseSchema: responseSchema,
       }
@@ -88,10 +101,10 @@ export class GeminiService {
       return JSON.parse(text) as GameResponse;
     } catch (error) {
       console.error("Gemini API Error:", error);
-      // Fallback for error handling to keep game alive
+      // Fallback for error handling
       return {
-        narrative: "SYSTEM ERROR: DATA CORRUPTION DETECTED. RETRYING...",
-        choices: [{ id: "retry", text: "Reboot System", type: "action" }]
+        narrative: "系统错误：数据流中断。正在尝试重建连接...",
+        choices: [{ id: "retry", text: "重启系统", type: "action" }]
       };
     }
   }
