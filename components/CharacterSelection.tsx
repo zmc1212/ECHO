@@ -8,31 +8,31 @@ interface CharacterSelectionProps {
 
 const CHARACTERS: CharacterPreset[] = [
   {
-    id: 'char_security',
-    name: '雷诺 (Raynor)',
-    role: '安保主管',
-    description: '前殖民地防暴部队指挥官。擅长战斗，但因过去的创伤容易精神不稳定。',
-    color: 'text-red-500 border-red-500/50 bg-red-950/30',
-    stats: { health: 120, sanity: 70 },
-    inventory: [{ id: 'wpn_baton', name: '高压电击棍', quantity: 1 }]
-  },
-  {
-    id: 'char_science',
-    name: '艾琳 (Erin)',
-    role: '异种生物学家',
-    description: '对未知生物有极高的理解力。精神韧性极强，但身体素质较弱。',
+    id: 'char_youth',
+    name: '李明 (Li Ming)',
+    role: '活力青年',
+    description: '充满好奇心的大学生。体能充沛，但性格有些急躁。来九真山是为了打卡拍照。',
     color: 'text-cyan-500 border-cyan-500/50 bg-cyan-950/30',
-    stats: { health: 80, sanity: 120 },
-    inventory: [{ id: 'itm_scanner', name: '生物扫描仪', quantity: 1 }]
+    stats: { health: 120, sanity: 80 },
+    inventory: [{ id: 'itm_camera', name: '单反相机', quantity: 1 }]
   },
   {
-    id: 'char_eng',
-    name: '也就是 (Isaac)',
-    role: '高级工程师',
-    description: '空间站维护技师。能够修理机械设备，拥有均衡的各项指标。',
+    id: 'char_pro',
+    name: '王强 (Mr. Wang)',
+    role: '沉稳职员',
+    description: '长期加班的企业高管。身体亚健康，但处事冷静。希望能在这里寻找养生之道。',
     color: 'text-amber-500 border-amber-500/50 bg-amber-950/30',
-    stats: { health: 100, sanity: 100 },
-    inventory: [{ id: 'itm_tool', name: '万能维修钳', quantity: 1 }]
+    stats: { health: 70, sanity: 110 },
+    inventory: [{ id: 'itm_thermos', name: '保温杯', quantity: 1 }]
+  },
+  {
+    id: 'char_elder',
+    name: '张老 (Grandpa)',
+    role: '和蔼长者',
+    description: '退休的大学教授。博古通今，身体虽弱但精神矍铄。对道家文化颇有研究。',
+    color: 'text-green-500 border-green-500/50 bg-green-950/30',
+    stats: { health: 60, sanity: 140 },
+    inventory: [{ id: 'itm_stick', name: '登山杖', quantity: 1 }]
   }
 ];
 
@@ -67,10 +67,10 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => 
       
       <div className="text-center mb-8 animate-in fade-in zoom-in duration-1000">
         <h2 className="text-3xl font-['Share_Tech_Mono'] text-white tracking-[0.2em] mb-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
-          IDENTITY_RECONSTRUCTION
+          SIMULATION_INIT
         </h2>
         <div className="text-amber-600 font-['Noto_Serif_SC'] text-sm">
-          检测到意识碎片... 请选择载体进行同步
+          VR体验：《九真仙境》 // 请选择您的体验身份
         </div>
       </div>
 
@@ -93,8 +93,8 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => 
                   <div className="w-16 h-16 border-2 border-dashed border-gray-600 rounded-full animate-spin-slow mb-4 flex items-center justify-center">
                     <div className="w-10 h-10 bg-gray-800 rotate-45"></div>
                   </div>
-                  <div className="font-['Share_Tech_Mono'] text-gray-500 text-lg animate-pulse">ENCRYPTED</div>
-                  <div className="font-['Share_Tech_Mono'] text-gray-700 text-xs mt-2">DATA_BLOCK_0{index + 1}</div>
+                  <div className="font-['Share_Tech_Mono'] text-gray-500 text-lg animate-pulse">LOADING</div>
+                  <div className="font-['Share_Tech_Mono'] text-gray-700 text-xs mt-2">USER_PROFILE_0{index + 1}</div>
                 </div>
 
                 {/* FRONT OF CARD (Revealed State) */}
@@ -103,7 +103,7 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => 
                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.05)_50%,rgba(255,255,255,0)_100%)] bg-[length:100%_4px] pointer-events-none z-0 opacity-20"></div>
                    
                    <div className="relative z-10 flex-1 flex flex-col">
-                      <div className="text-xs font-['Share_Tech_Mono'] opacity-70 mb-1">CLASS: {char.role}</div>
+                      <div className="text-xs font-['Share_Tech_Mono'] opacity-70 mb-1">ARCHETYPE: {char.role}</div>
                       <h3 className="text-2xl font-['Noto_Serif_SC'] font-bold mb-4 border-b border-current pb-2">{char.name}</h3>
                       
                       <div className="flex-1 text-sm font-['Noto_Serif_SC'] opacity-90 leading-relaxed">
@@ -112,15 +112,15 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => 
 
                       <div className="mt-4 space-y-2 text-xs font-['Share_Tech_Mono']">
                         <div className="flex justify-between border-b border-current/30 pb-1">
-                          <span>HP</span>
+                          <span>PHY (体能)</span>
                           <span>{char.stats.health}</span>
                         </div>
                          <div className="flex justify-between border-b border-current/30 pb-1">
-                          <span>SAN</span>
+                          <span>MNT (精神)</span>
                           <span>{char.stats.sanity}</span>
                         </div>
                         <div className="pt-1 truncate">
-                          ITEM: {char.inventory[0].name}
+                          EQUIP: {char.inventory[0].name}
                         </div>
                       </div>
                    </div>
@@ -145,7 +145,7 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => 
           onClick={confirmSelection}
           className="mt-12 px-8 py-3 bg-amber-600 hover:bg-amber-500 text-black font-['Share_Tech_Mono'] font-bold tracking-widest uppercase transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-30 animate-in slide-in-from-bottom-4"
         >
-          INITIALIZE_SYNC &gt;&gt;
+          ENTER_SIMULATION &gt;&gt;
         </button>
       )}
 

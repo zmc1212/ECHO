@@ -23,7 +23,7 @@ const App: React.FC = () => {
     health: 100,
     sanity: 100,
     credits: 0,
-    location: '低温休眠仓'
+    location: '虚拟大厅'
   });
   
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -32,11 +32,12 @@ const App: React.FC = () => {
   const runBootSequence = async () => {
     setGameStatus(GameStatus.BOOTING);
     const bootLines = [
-      "BIOS 自检... 通过",
-      "加载神经连接接口... 完成",
-      "正在建立上行链路...",
-      "警告：检测到记忆碎片丢失",
-      "系统重置完成。"
+      "载入 VR 引擎... 100%",
+      "正在连接《九真仙境》服务器...",
+      "下载地形数据包 [JIUZHEN_MT_V4.2]... 完成",
+      "同步感官反馈系统...",
+      "警告：检测到局部气象数据异常 (预设剧情事件)",
+      "模拟开始。祝您旅途愉快。"
     ];
 
     for (const line of bootLines) {
@@ -50,8 +51,8 @@ const App: React.FC = () => {
     }
 
     setGameStatus(GameStatus.RUNNING);
-    // Start game automatically
-    handleAction("启动唤醒程序");
+    // Start game automatically with scenic entry
+    handleAction("进入九真山景区");
   };
 
   const handleCharacterSelect = (preset: CharacterPreset) => {
@@ -106,7 +107,7 @@ const App: React.FC = () => {
     setChoices([]); // Clear previous choices
 
     // 2. Add User Message (if not initial boot)
-    if (actionText !== "启动唤醒程序") {
+    if (actionText !== "进入九真山景区") {
       setMessages(prev => [...prev, {
         id: Math.random().toString(),
         role: 'user',
@@ -153,7 +154,7 @@ const App: React.FC = () => {
       setMessages(prev => [...prev, {
         id: Math.random().toString(),
         role: 'system',
-        text: "严重错误: 信号丢失。正在尝试重连...",
+        text: "严重错误: 模拟数据流中断。正在尝试重连...",
         timestamp: new Date().toLocaleTimeString('zh-CN')
       }]);
       setChoices([{ id: 'retry', text: '重新连接', type: 'action' }]);
@@ -176,14 +177,14 @@ const App: React.FC = () => {
             <header className="border-b-2 border-amber-500/50 mb-2 pb-2 flex justify-between items-end shrink-0">
               <div>
                 <h1 className="text-3xl md:text-4xl text-amber-500 font-['Noto_Serif_SC'] font-bold tracking-widest drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]">
-                  协议：回声
+                  九真仙境 VR
                 </h1>
-                <span className="text-xs text-amber-800 font-['Share_Tech_Mono']">PROJECT_ECHO // V.2.1.0</span>
+                <span className="text-xs text-amber-800 font-['Share_Tech_Mono']">JIUZHEN_FAIRYLAND // V.4.2</span>
               </div>
               
               <div className="flex flex-col items-end gap-1 text-xs font-['Share_Tech_Mono'] text-amber-700">
                 <span className={isProcessing || isTyping ? "animate-pulse text-amber-400" : ""}>
-                  STATUS: {isProcessing ? "数据演算中..." : isTyping ? "接收传输..." : "待机"}
+                  STATUS: {isProcessing ? "SCENARIO_GENERATION..." : isTyping ? "DATA_STREAMING..." : "STANDBY"}
                 </span>
                 <span>UPLINK: <span className="text-green-600">STABLE</span></span>
               </div>
@@ -202,7 +203,7 @@ const App: React.FC = () => {
               {isProcessing || isTyping ? (
                  <div className="h-full flex flex-col items-center justify-center text-amber-900/50 font-['Share_Tech_Mono'] animate-pulse gap-2">
                    <div className="w-12 h-1 bg-amber-900/50 animate-[scanline_1s_infinite]"></div>
-                   <span>{isProcessing ? "CALCULATING PROBABILITIES..." : "DECRYPTING..."}</span>
+                   <span>{isProcessing ? "RENDERING ENVIRONMENT..." : "DECODING MYTHOLOGY..."}</span>
                  </div>
               ) : (
                  <ChoicePanel 
