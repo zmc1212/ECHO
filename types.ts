@@ -3,7 +3,6 @@ export interface Message {
   role: 'user' | 'model' | 'system';
   text: string;
   timestamp: string;
-  isTyping?: boolean;
 }
 
 export enum GameStatus {
@@ -23,4 +22,15 @@ export interface InventoryItem {
   id: string;
   name: string;
   quantity: number;
+}
+
+export interface GameResponse {
+  narrative: string;
+  choices: Array<{
+    id: string;
+    text: string;
+    type?: 'action' | 'investigate' | 'danger'; 
+  }>;
+  stats_update?: Partial<PlayerStats>;
+  item_update?: InventoryItem[];
 }

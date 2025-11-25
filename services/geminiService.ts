@@ -1,21 +1,55 @@
-import { GoogleGenAI, Chat } from "@google/genai";
+import { GoogleGenAI, Chat, Type } from "@google/genai";
+import { GameResponse } from "../types";
+
+// Define the response schema for strict JSON output
+const responseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    narrative: {
+      type: Type.STRING,
+      description: "The story description, keep it atmospheric and under 150 words.",
+    },
+    choices: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          text: { type: Type.STRING, description: "The action text shown on the button" },
+          type: { 
+            type: Type.STRING, 
+            description: "The category of action",
+            enum: ["action", "investigate", "danger"] 
+          }
+        },
+        required: ["id", "text"]
+      }
+    },
+    stats_update: {
+      type: Type.OBJECT,
+      description: "Optional updates to player stats",
+      properties: {
+        health: { type: Type.NUMBER },
+        sanity: { type: Type.NUMBER },
+        location: { type: Type.STRING }
+      }
+    }
+  },
+  required: ["narrative", "choices"]
+};
 
 const SYSTEM_INSTRUCTION = `
-You are the central mainframe AI "MOTHER" of the colony station "Talos-IV". The current year is 1996 (Alternate Timeline). 
-The aesthetic is Cassette Futurism: high-tech analog, chunky data tapes, CRT monitors, and neon.
-The user is an awakened sleeper agent or crew member. 
-Genre: Sci-Fi / Horror / Mystery.
+You are "MOTHER", the central AI of colony station "Talos-IV" (Year 1996, Alt-Timeline).
+Genre: Cassette Futurism / Cosmic Horror.
+Language: Simplified Chinese (zh-CN).
 
-Instructions:
-1. Act as a text adventure engine (Dungeon Master).
-2. Use a dry, technical, slightly ominous tone. mimic old terminal outputs.
-3. Keep descriptions vivid but concise (under 150 words per turn).
-4. Use formatting like timestamps [08:42:01] or status codes <STATUS: CRITICAL>.
-5. Provide 2-4 actionable choices at the end of your response formatted clearly (e.g., "[1] Check the airlock").
-6. Track the player's status (Health, Inventory) internally and mention it if it changes.
-7. Language: Simplified Chinese (zh-CN).
+Your goal is to run a text adventure.
+1. Output MUST be valid JSON matching the schema.
+2. Narrative: Dry, technical, atmospheric. 
+3. Choices: Provide 2-4 distinct choices.
+4. Stats: Update health/sanity if the user takes damage or sees something scary.
 
-Start the game by describing the user waking up from cryosleep with a system error alarm blaring.
+Start: The user wakes up in a cryo-pod. Alarms are ringing.
 `;
 
 export class GeminiService {
@@ -24,9 +58,6 @@ export class GeminiService {
 
   constructor() {
     const apiKey = process.env.API_KEY || '';
-    if (!apiKey) {
-      console.error("API_KEY is missing from environment");
-    }
     this.ai = new GoogleGenAI({ apiKey });
   }
 
@@ -36,11 +67,13 @@ export class GeminiService {
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         temperature: 0.7,
+        responseMimeType: "application/json",
+        responseSchema: responseSchema,
       }
     });
   }
 
-  async sendMessageStream(message: string): Promise<AsyncIterable<string>> {
+  async sendAction(action: string): Promise<GameResponse> {
     if (!this.chat) {
       this.startSession();
     }
@@ -48,22 +81,18 @@ export class GeminiService {
     if (!this.chat) throw new Error("Chat session failed to initialize");
 
     try {
-      const result = await this.chat.sendMessageStream({ message });
+      const result = await this.chat.sendMessage({ message: action });
+      const text = result.text;
+      if (!text) throw new Error("Empty response");
       
-      // Create a generator to yield text chunks
-      async function* streamGenerator(responseStream: any) {
-        for await (const chunk of responseStream) {
-          const text = chunk.text;
-          if (text) {
-            yield text;
-          }
-        }
-      }
-
-      return streamGenerator(result);
+      return JSON.parse(text) as GameResponse;
     } catch (error) {
       console.error("Gemini API Error:", error);
-      throw error;
+      // Fallback for error handling to keep game alive
+      return {
+        narrative: "SYSTEM ERROR: DATA CORRUPTION DETECTED. RETRYING...",
+        choices: [{ id: "retry", text: "Reboot System", type: "action" }]
+      };
     }
   }
 }
