@@ -87,7 +87,7 @@ export class GeminiService {
   private chat: Chat | null = null;
 
   constructor() {
-    const apiKey = process.env.API_KEY || '';
+    const apiKey = process.env.API_KEY || 'AIzaSyBMX3dBkuGPjouM3WLy-aAxLw5YtvDTr7c';
     this.ai = new GoogleGenAI({ apiKey });
   }
 
