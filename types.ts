@@ -1,3 +1,4 @@
+
 export interface Message {
   id: string;
   role: 'user' | 'model' | 'system';
@@ -37,6 +38,13 @@ export interface CharacterPreset {
   color: string;
 }
 
+export interface SceneObject {
+  id: string;
+  name: string;
+  type: 'item' | 'clue' | 'default';
+  description?: string; // Optional pre-fetched description
+}
+
 export interface GameResponse {
   narrative: string;
   choices: Array<{
@@ -44,6 +52,7 @@ export interface GameResponse {
     text: string;
     type?: 'action' | 'investigate' | 'danger'; 
   }>;
+  scene_objects?: SceneObject[];
   stats_update?: Partial<PlayerStats>;
   item_update?: InventoryItem[];
 }

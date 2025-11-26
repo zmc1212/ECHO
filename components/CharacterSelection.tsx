@@ -63,18 +63,20 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => 
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full z-20">
+    <div className="flex flex-col items-center justify-center h-full w-full z-20 overflow-hidden relative pb-safe-bottom">
       
-      <div className="text-center mb-8 animate-in fade-in zoom-in duration-1000">
-        <h2 className="text-3xl font-['Share_Tech_Mono'] text-white tracking-[0.2em] mb-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+      {/* Header */}
+      <div className="text-center mb-4 md:mb-8 animate-in fade-in zoom-in duration-1000 shrink-0 mt-4 md:mt-0">
+        <h2 className="text-2xl md:text-3xl font-['Share_Tech_Mono'] text-white tracking-[0.2em] mb-1 md:mb-2 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
           SIMULATION_INIT
         </h2>
-        <div className="text-amber-600 font-['Noto_Serif_SC'] text-sm">
-          VR体验：《九真仙境》 // 请选择您的体验身份
+        <div className="text-amber-600 font-['Noto_Serif_SC'] text-xs md:text-sm">
+          互动小说体验：《九真仙境》 // 请选择您的体验身份
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center justify-center w-full max-w-5xl px-4">
+      {/* Cards Container */}
+      <div className="flex flex-col md:flex-row gap-3 md:gap-8 items-center justify-center w-full max-w-5xl px-4 flex-1 md:flex-initial min-h-0 overflow-y-auto md:overflow-visible py-2">
         {CHARACTERS.map((char, index) => {
           const isRevealed = revealed[char.id];
           const isSelected = selectedId === char.id;
@@ -82,51 +84,68 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => 
           return (
             <div 
               key={char.id}
-              className={`relative group cursor-pointer perspective-1000 w-full md:w-64 h-80 transition-all duration-300 ${isSelected ? 'scale-105 z-30' : 'hover:scale-105 z-10'}`}
+              className={`
+                relative group cursor-pointer perspective-1000 transition-all duration-300 shrink-0
+                w-full md:w-64 
+                h-24 md:h-96 
+                ${isSelected ? 'scale-[1.02] md:scale-105 z-30 ring-1 ring-white/50' : 'hover:scale-[1.01] md:hover:scale-105 z-10'}
+              `}
               onClick={() => handleCardClick(char)}
             >
               <div className={`relative w-full h-full duration-700 preserve-3d transition-transform ${isRevealed ? 'rotate-y-180' : ''}`}>
                 
                 {/* BACK OF CARD (Encrypted State) */}
-                <div className="absolute inset-0 backface-hidden w-full h-full bg-black border-2 border-gray-800 flex flex-col items-center justify-center p-4 overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.8)]">
+                <div className="absolute inset-0 backface-hidden w-full h-full bg-black border-2 border-gray-800 flex md:flex-col items-center justify-center md:justify-center p-4 overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.8)] gap-4 md:gap-0">
                   <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(50,50,50,0.1)_50%,transparent_75%)] bg-[length:250%_250%] animate-[shine_3s_infinite]"></div>
-                  <div className="w-16 h-16 border-2 border-dashed border-gray-600 rounded-full animate-spin-slow mb-4 flex items-center justify-center">
-                    <div className="w-10 h-10 bg-gray-800 rotate-45"></div>
+                  
+                  {/* Icon */}
+                  <div className="w-10 h-10 md:w-16 md:h-16 border-2 border-dashed border-gray-600 rounded-full animate-spin-slow flex items-center justify-center shrink-0">
+                    <div className="w-6 h-6 md:w-10 md:h-10 bg-gray-800 rotate-45"></div>
                   </div>
-                  <div className="font-['Share_Tech_Mono'] text-gray-500 text-lg animate-pulse">LOADING</div>
-                  <div className="font-['Share_Tech_Mono'] text-gray-700 text-xs mt-2">USER_PROFILE_0{index + 1}</div>
+                  
+                  {/* Text */}
+                  <div className="flex flex-col items-start md:items-center">
+                    <div className="font-['Share_Tech_Mono'] text-gray-500 text-lg animate-pulse">LOADING</div>
+                    <div className="font-['Share_Tech_Mono'] text-gray-700 text-xs mt-0 md:mt-2">USER_PROFILE_0{index + 1}</div>
+                  </div>
                 </div>
 
                 {/* FRONT OF CARD (Revealed State) */}
-                <div className={`absolute inset-0 backface-hidden rotate-y-180 w-full h-full bg-black border-2 flex flex-col p-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] ${char.color} ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : ''}`}>
+                <div className={`absolute inset-0 backface-hidden rotate-y-180 w-full h-full bg-black border-2 flex flex-row md:flex-col p-3 md:p-4 shadow-[0_0_30px_rgba(0,0,0,0.5)] ${char.color} ${isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : ''}`}>
                    {/* Holographic overlay */}
                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.05)_50%,rgba(255,255,255,0)_100%)] bg-[length:100%_4px] pointer-events-none z-0 opacity-20"></div>
                    
-                   <div className="relative z-10 flex-1 flex flex-col">
-                      <div className="text-xs font-['Share_Tech_Mono'] opacity-70 mb-1">ARCHETYPE: {char.role}</div>
-                      <h3 className="text-2xl font-['Noto_Serif_SC'] font-bold mb-4 border-b border-current pb-2">{char.name}</h3>
+                   <div className="relative z-10 flex-1 flex flex-row md:flex-col justify-between md:justify-start items-center md:items-stretch gap-4 md:gap-0">
                       
-                      <div className="flex-1 text-sm font-['Noto_Serif_SC'] opacity-90 leading-relaxed">
-                        {char.description}
+                      {/* Left Side (Mobile) / Top (Desktop) */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] md:text-xs font-['Share_Tech_Mono'] opacity-70 mb-0 md:mb-1">ARCHETYPE: {char.role}</div>
+                        <h3 className="text-lg md:text-2xl font-['Noto_Serif_SC'] font-bold mb-1 md:mb-4 border-b border-current/30 md:border-current pb-1 md:pb-2 truncate">{char.name}</h3>
+                        
+                        {/* Description - Hidden on Mobile unless enough space, or simplified */}
+                        <div className="hidden md:block flex-1 text-sm font-['Noto_Serif_SC'] opacity-90 leading-relaxed">
+                          {char.description}
+                        </div>
                       </div>
 
-                      <div className="mt-4 space-y-2 text-xs font-['Share_Tech_Mono']">
-                        <div className="flex justify-between border-b border-current/30 pb-1">
+                      {/* Right Side (Mobile) / Bottom (Desktop) */}
+                      <div className="md:mt-4 space-y-1 md:space-y-2 text-[10px] md:text-xs font-['Share_Tech_Mono'] shrink-0 min-w-[80px] md:min-w-0 text-right md:text-left">
+                        <div className="flex flex-col md:flex-row justify-between border-b md:border-b border-current/30 pb-1">
                           <span>PHY (体能)</span>
                           <span>{char.stats.health}</span>
                         </div>
-                         <div className="flex justify-between border-b border-current/30 pb-1">
+                         <div className="flex flex-col md:flex-row justify-between border-b md:border-b border-current/30 pb-1">
                           <span>MNT (精神)</span>
                           <span>{char.stats.sanity}</span>
                         </div>
-                        <div className="pt-1 truncate">
-                          EQUIP: {char.inventory[0].name}
+                        <div className="pt-1 truncate max-w-[100px] md:max-w-none">
+                          {char.inventory[0].name}
                         </div>
                       </div>
                    </div>
                    
                    {isSelected && (
-                     <div className="absolute bottom-2 right-2 text-white animate-pulse">
+                     <div className="absolute bottom-2 right-2 text-white animate-pulse hidden md:block">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
@@ -140,14 +159,21 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => 
         })}
       </div>
 
-      {selectedId && (
-        <button 
-          onClick={confirmSelection}
-          className="mt-12 px-8 py-3 bg-amber-600 hover:bg-amber-500 text-black font-['Share_Tech_Mono'] font-bold tracking-widest uppercase transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-30 animate-in slide-in-from-bottom-4"
-        >
-          ENTER_SIMULATION &gt;&gt;
-        </button>
-      )}
+      {/* Confirm Button */}
+      <div className="shrink-0 mt-2 md:mt-8 mb-4 min-h-[60px] flex items-center">
+        {selectedId ? (
+          <button 
+            onClick={confirmSelection}
+            className="px-6 md:px-8 py-2 md:py-3 bg-amber-600 hover:bg-amber-500 text-black font-['Share_Tech_Mono'] font-bold tracking-widest uppercase transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.5)] z-30 animate-in slide-in-from-bottom-4 text-sm md:text-base"
+          >
+            START_STORY &gt;&gt;
+          </button>
+        ) : (
+          <div className="text-gray-600 font-['Share_Tech_Mono'] text-xs animate-pulse">
+            [ WAITING FOR SELECTION ]
+          </div>
+        )}
+      </div>
 
       <style>{`
         .perspective-1000 { perspective: 1000px; }

@@ -2,11 +2,12 @@ import React from 'react';
 
 interface CRTLayerProps {
   children: React.ReactNode;
+  className?: string;
 }
 
-const CRTLayer: React.FC<CRTLayerProps> = ({ children }) => {
+const CRTLayer: React.FC<CRTLayerProps> = ({ children, className = '' }) => {
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden scanlines">
+    <div className={`relative w-full h-screen bg-black overflow-hidden scanlines ${className}`}>
       {/* Screen Curvature Vignette */}
       <div className="absolute inset-0 z-40 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_50%,rgba(0,0,0,0.6)_100%)]"></div>
       

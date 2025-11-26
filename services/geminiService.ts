@@ -1,5 +1,5 @@
 import { GoogleGenAI, Chat, Type } from "@google/genai";
-import { GameResponse } from "../types";
+import { GameResponse, PlayerStats, InventoryItem } from "../types";
 
 // Define the response schema for strict JSON output
 const responseSchema = {
@@ -25,6 +25,18 @@ const responseSchema = {
         required: ["id", "text"]
       }
     },
+    scene_objects: {
+      type: Type.ARRAY,
+      description: "Interactive environmental elements, items, or clues visible in the current scene.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          name: { type: Type.STRING, description: "Name of the object" },
+          type: { type: Type.STRING, enum: ['item', 'clue', 'default'], description: "Type of interaction expected" }
+        }
+      }
+    },
     stats_update: {
       type: Type.OBJECT,
       description: "Optional updates to player stats",
@@ -36,13 +48,13 @@ const responseSchema = {
     },
     item_update: {
       type: Type.ARRAY,
-      description: "Items added to inventory",
+      description: "Items added (positive qty) or removed/used (negative qty)",
       items: {
         type: Type.OBJECT,
         properties: {
           id: { type: Type.STRING },
           name: { type: Type.STRING, description: "Item name in Chinese" },
-          quantity: { type: Type.NUMBER }
+          quantity: { type: Type.NUMBER, description: "Positive to add, Negative to use/remove" }
         }
       }
     }
@@ -59,27 +71,38 @@ Language: Simplified Chinese (zh-CN).
 2. Output MUST be valid JSON matching the schema.
 3. **Pacing**: Guide the player through the script linearly but allow for interactive choices at each stage.
 4. **Tone**: At first, it is a normal scenic tour. Then, it becomes supernatural/mythological (Taoist fantasy).
-5. **Stats**:
-   - 'Health' represents Physical Energy (body).
-   - 'Sanity' represents Mental Clarity (spirit/dao).
-   - 'Location' is the current scenic spot.
+5. **Interactive Objects**: ALWAYS provide 1-3 'scene_objects' in the JSON response representing things the player can see or investigate in the current environment.
+
+**Handling User Actions:**
+- **Standard Action**: Advance story based on choice.
+- **Scan/Investigate**: If action is "系统扫描目标：[Name]", describe it.
+- **Item Usage**: If action starts with "使用道具：[Name]", determine the effect based on the item and context:
+    - **Healing/Consumable**: Recover HP/Sanity and consume the item (return 'item_update' with negative quantity).
+    - **Key Item**: If it solves a puzzle or helps the NPC, trigger a positive outcome.
+    - **Irrelevant**: If the item has no use here, describe the failure but do not consume it (unless it's a one-time use thing that was wasted).
+
+**Stats & Inventory Context:**
+- You will receive the player's current status and inventory in the prompt. USE THIS to determine if they can actually perform actions or if specific dialogue options should appear.
+- **Health**: Physical Energy. If reckless, REDUCE it.
+- **Sanity**: Mental Clarity.
+- **Item Updates**: To remove an item (used), send negative quantity (e.g., -1). To add, send positive.
 
 **Script Flow (Do not skip steps):**
-1. **Act 1: The Rift**: Player is at Jiuzhen Mountain Scenic Area. Suddenly, storm hits, time rift opens. Player falls into the Fairyland.
-2. **Act 2: The Guide**: Waking up in Fairyland (flowers, mist). "Jiuzhen Xuannu" appears, heals player with "Jade Dew", and explains the quest: Visit 8 Immortals to learn "Daoist Wellness" (Shape & Spirit) to return home.
-3. **Act 3: The Eight Immortals (The Journey)**:
-   - Station 1: Alchemy Pool (Longevity Tree) -> Meet **Iron Crutch Li**. Theme: "Shape/Body". Breathing exercises.
-   - Station 2: Ethnic Garden (Grassland) -> Meet **Lan Caihe**. Theme: "Emotion". Singing/Dancing.
-   - Station 3: Fairy Lake -> Meet **He Xiangu**. Theme: "Beauty/Diet". Eating herbs/flowers.
-   - Station 4: Jujube Cave (Bonfire) -> Meet **Cao Guojiu**. Theme: "Etiquette/Discipline". Self-control.
-   - Station 5: Luding Bridge -> Meet **Han Xiangzi**. Theme: "Spirit/Music". Listening to flute.
-   - Station 6: Immortal Cave (Waterfall) -> Meet **Han Zhongli**. Theme: "Heart/Meditation".
-   - Station 7: Old Street -> Meet **Zhang Guolao**. Theme: "Longevity/Reverse Aging". Turtle breathing.
-   - Station 8: Academy -> Meet **Lu Dongbin**. Theme: "Virtue". Sword flight to the peak.
-4. **Act 4: Conclusion**: At the peak, view the scenery. Epiphany. Xuannu opens rift. Return to reality.
+1. **Act 1: The Rift**: Jiuzhen Mountain -> Storm -> Rift.
+2. **Act 2: The Guide**: Fairyland -> Xuannu -> Jade Dew (Heals).
+3. **Act 3: The Eight Immortals**:
+   - Iron Crutch Li (Body/Breath)
+   - Lan Caihe (Emotion/Song)
+   - He Xiangu (Diet/Beauty)
+   - Cao Guojiu (Discipline)
+   - Han Xiangzi (Music)
+   - Han Zhongli (Meditation)
+   - Zhang Guolao (Reverse Aging)
+   - Lu Dongbin (Virtue/Flight)
+4. **Act 4: Conclusion**: Peak -> Epiphany -> Return.
 
 **Start Scenario**:
-The simulation begins at the entrance of Jiuzhen Mountain. The weather is sunny (for now). The player is excited to hike.
+The simulation begins at the entrance of Jiuzhen Mountain. Sunny weather.
 `;
 
 export class GeminiService {
@@ -96,29 +119,36 @@ export class GeminiService {
       model: "gemini-2.5-flash",
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.7, // Slightly lower for more coherent narrative following
+        temperature: 0.7,
         responseMimeType: "application/json",
         responseSchema: responseSchema,
       }
     });
   }
 
-  async sendAction(action: string): Promise<GameResponse> {
+  async sendAction(action: string, context?: { stats: PlayerStats, inventory: InventoryItem[] }): Promise<GameResponse> {
     if (!this.chat) {
       this.startSession();
     }
     
     if (!this.chat) throw new Error("Chat session failed to initialize");
 
+    let finalPrompt = action;
+    if (context) {
+        // We invisibly append the context to the user message so Gemini knows the state
+        // This helps it validate item usage or generate context-aware choices
+        const inventoryStr = context.inventory.map(i => `${i.name} x${i.quantity}`).join(', ');
+        finalPrompt = `${action}\n\n[SYSTEM DATA - Current State]\nLocation: ${context.stats.location}\nHealth: ${context.stats.health}\nSanity: ${context.stats.sanity}\nInventory: [${inventoryStr}]`;
+    }
+
     try {
-      const result = await this.chat.sendMessage({ message: action });
+      const result = await this.chat.sendMessage({ message: finalPrompt });
       const text = result.text;
       if (!text) throw new Error("Empty response");
       
       return JSON.parse(text) as GameResponse;
     } catch (error) {
       console.error("Gemini API Error:", error);
-      // Fallback for error handling
       return {
         narrative: "模拟连接不稳定...正在重载当前场景数据...",
         choices: [{ id: "retry", text: "尝试重连", type: "action" }]

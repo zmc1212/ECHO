@@ -77,6 +77,22 @@ export class AudioService {
     setTimeout(() => this.playTone(2000, 'square', 0.3, 0.1), 100);
     setTimeout(() => this.playTone(800, 'sawtooth', 0.4, 0.1), 200);
   }
+
+  playDamage() {
+    this.init();
+    // Low noise/impact
+    this.playTone(100, 'sawtooth', 0.1, 0.6);
+    this.playTone(50, 'square', 0.2, 0.8);
+    setTimeout(() => this.playTone(80, 'sawtooth', 0.2, 0.4), 50);
+  }
+
+  playItemUse() {
+    this.init();
+    // Positive shimmer
+    this.playTone(600, 'sine', 0.1, 0.2);
+    setTimeout(() => this.playTone(800, 'triangle', 0.1, 0.2), 50);
+    setTimeout(() => this.playTone(1200, 'sine', 0.3, 0.2), 100);
+  }
 }
 
 export const audioService = new AudioService();
