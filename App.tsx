@@ -272,7 +272,7 @@ const App: React.FC = () => {
             {/* Header */}
             <header className="border-b-2 border-amber-500/50 mb-2 pb-2 flex justify-between items-end shrink-0 gap-2">
               <div className="min-w-0">
-                <h1 className="text-2xl md:text-4xl text-amber-500 font-['Noto_Serif_SC'] font-bold tracking-widest drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] truncate">
+                <h1 className="text-2xl md:text-4xl text-amber-500 font-['Noto_Serif_SC'] font-bold tracking-widest drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] truncate phosphor-bloom">
                   九真仙境
                 </h1>
                 <span className="text-[10px] md:text-xs text-amber-800 font-['Share_Tech_Mono']">JIUZHEN_FAIRYLAND // V.4.2</span>

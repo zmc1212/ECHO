@@ -36,6 +36,7 @@ export interface CharacterPreset {
   stats: Partial<PlayerStats>;
   inventory: InventoryItem[];
   color: string;
+  lore?: string[]; // Optional random lore snippets
 }
 
 export interface SceneObject {
@@ -50,7 +51,7 @@ export interface GameResponse {
   choices: Array<{
     id: string;
     text: string;
-    type?: 'action' | 'investigate' | 'danger'; 
+    type?: 'action' | 'investigate' | 'danger' | 'use_item'; 
   }>;
   scene_objects?: SceneObject[];
   stats_update?: Partial<PlayerStats>;

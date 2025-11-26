@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { audioService } from '../services/audioService';
 
 interface Choice {
   id: string;
   text: string;
-  type?: 'action' | 'investigate' | 'danger';
+  type?: 'action' | 'investigate' | 'danger' | 'use_item';
 }
 
 interface ChoicePanelProps {
@@ -24,7 +25,11 @@ const ChoicePanel: React.FC<ChoicePanelProps> = ({ choices, onSelect, disabled }
           disabled={disabled}
           onMouseEnter={() => !disabled && audioService.playHover()}
           onClick={() => {
-            audioService.playSelect();
+            if (choice.type === 'use_item') {
+              audioService.playItemUse();
+            } else {
+              audioService.playSelect();
+            }
             onSelect(choice.text);
           }}
           className={`
@@ -37,6 +42,8 @@ const ChoicePanel: React.FC<ChoicePanelProps> = ({ choices, onSelect, disabled }
                 ? 'border-red-600/60 hover:border-red-500 bg-red-950/40' 
                 : choice.type === 'investigate'
                 ? 'border-cyan-600/60 hover:border-cyan-400 bg-cyan-950/40'
+                : choice.type === 'use_item'
+                ? 'border-emerald-600/60 hover:border-emerald-400 bg-emerald-950/40'
                 : 'border-amber-600/60 hover:border-amber-400 bg-amber-950/40'
             }
           `}
@@ -49,6 +56,7 @@ const ChoicePanel: React.FC<ChoicePanelProps> = ({ choices, onSelect, disabled }
             <span className={`font-['VT323'] text-2xl uppercase tracking-wider ${
                choice.type === 'danger' ? 'text-red-400 group-hover:text-red-200' : 
                choice.type === 'investigate' ? 'text-cyan-400 group-hover:text-cyan-200' :
+               choice.type === 'use_item' ? 'text-emerald-400 group-hover:text-emerald-200' :
                'text-amber-500 group-hover:text-amber-200'
             }`}>
               {choice.text}

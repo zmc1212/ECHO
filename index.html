@@ -10,68 +10,111 @@
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
     <style>
       body {
-        background-color: #050505;
+        background-color: #000;
         overflow: hidden; /* Prevent body scroll, handle in app */
+        color: #eab308; /* Default amber */
       }
-      /* Custom Scrollbar for Webkit */
+      /* Custom Scrollbar */
       ::-webkit-scrollbar {
-        width: 12px;
-        background: #000;
+        width: 8px;
+        background: #0a0a0a;
       }
       ::-webkit-scrollbar-thumb {
-        background: #b45309; 
-        border: 2px solid #000;
+        background: #451a03; 
+        border: 1px solid #000;
+        border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #d97706; 
+        background: #78350f; 
       }
       
       /* CRT Flicker Animation */
       @keyframes flicker {
-        0% { opacity: 0.97; }
+        0% { opacity: 0.98; }
         5% { opacity: 0.95; }
         10% { opacity: 0.9; }
         15% { opacity: 0.95; }
         20% { opacity: 0.99; }
         50% { opacity: 0.95; }
         80% { opacity: 0.9; }
-        100% { opacity: 0.97; }
+        100% { opacity: 0.98; }
       }
       
-      @keyframes scanline {
-        0% { transform: translateY(-100%); }
-        100% { transform: translateY(100%); }
-      }
-
       .crt-flicker {
         animation: flicker 0.15s infinite;
       }
+
+      /* Scanline Animation */
+      @keyframes scanline-scroll {
+        0% { transform: translateY(0%); }
+        100% { transform: translateY(100%); }
+      }
       
-      .scanlines::before {
-        content: " ";
-        display: block;
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-        z-index: 50;
-        background-size: 100% 2px, 3px 100%;
+      .scanlines-anim {
+        background: linear-gradient(
+          to bottom,
+          rgba(255,255,255,0),
+          rgba(255,255,255,0) 50%,
+          rgba(0,0,0,0.3) 50%,
+          rgba(0,0,0,0.3)
+        );
+        background-size: 100% 4px;
+        animation: scanline-scroll 8s linear infinite;
         pointer-events: none;
       }
 
-      .text-glow {
-        text-shadow: 0 0 4px rgba(245, 158, 11, 0.6);
-      }
-      
-      .cursor-blink {
-        animation: blink 1s step-end infinite;
+      /* Static Noise */
+      @keyframes noise {
+        0% { transform: translate(0,0) }
+        10% { transform: translate(-5%,-5%) }
+        20% { transform: translate(-10%,5%) }
+        30% { transform: translate(5%,-10%) }
+        40% { transform: translate(-5%,15%) }
+        50% { transform: translate(-10%,5%) }
+        60% { transform: translate(15%,0) }
+        70% { transform: translate(0,10%) }
+        80% { transform: translate(-15%,0) }
+        90% { transform: translate(10%,5%) }
+        100% { transform: translate(5%,0) }
       }
 
-      @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0; }
+      .noise-overlay {
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: repeating-radial-gradient(
+          #000 0 0.0001%,
+          #111 0 0.0002%
+        ); 
+        opacity: 0.06;
+        animation: noise 0.5s infinite linear;
+        pointer-events: none;
+        z-index: 55;
+      }
+
+      /* Phosphor Ghosting / Bloom */
+      .phosphor-bloom {
+        text-shadow: 
+          0 0 1px rgba(234, 179, 8, 0.3), /* Base fuzz */
+          0 0 3px rgba(234, 179, 8, 0.3), /* Glow */
+          1px 0 2px rgba(255, 0, 0, 0.2), /* Red separation */
+          -1px 0 2px rgba(0, 255, 255, 0.2); /* Cyan separation */
+      }
+      
+      /* Occasional Ghosting Twitch */
+      @keyframes ghost-twitch {
+        0% { transform: translateX(0) skewX(0); opacity: 1; filter: blur(0); }
+        96% { transform: translateX(0) skewX(0); opacity: 1; filter: blur(0); }
+        97% { transform: translateX(2px) skewX(2deg); opacity: 0.8; filter: blur(1px); }
+        98% { transform: translateX(-1px) skewX(-1deg); opacity: 0.9; }
+        99% { transform: translateX(1px) skewX(0); opacity: 1; }
+        100% { transform: translateX(0) skewX(0); opacity: 1; }
+      }
+
+      .ghost-effect {
+        animation: ghost-twitch 10s infinite ease-out;
       }
 
       /* Screen Shake */
@@ -93,6 +136,10 @@
       .animate-blood-flash {
         animation: bloodFlash 0.6s ease-out forwards;
       }
+
+      /* Utility for text glow override */
+      .text-shadow-none { text-shadow: none; }
+      .text-shadow-cyan { text-shadow: 0 0 4px rgba(6, 182, 212, 0.6); }
     </style>
 
 <script type="importmap">

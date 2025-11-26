@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Chat, Type } from "@google/genai";
 import { GameResponse, PlayerStats, InventoryItem } from "../types";
 
@@ -18,8 +19,8 @@ const responseSchema = {
           text: { type: Type.STRING, description: "Action text on button (Chinese)" },
           type: { 
             type: Type.STRING, 
-            description: "Action category",
-            enum: ["action", "investigate", "danger"] 
+            description: "Action category. Use 'use_item' if the choice involves using an inventory item.",
+            enum: ["action", "investigate", "danger", "use_item"] 
           }
         },
         required: ["id", "text"]
@@ -76,10 +77,16 @@ Language: Simplified Chinese (zh-CN).
 **Handling User Actions:**
 - **Standard Action**: Advance story based on choice.
 - **Scan/Investigate**: If action is "系统扫描目标：[Name]", describe it.
-- **Item Usage**: If action starts with "使用道具：[Name]", determine the effect based on the item and context:
+- **Item Usage**: If action starts with "使用道具：" OR matches a choice of type 'use_item', determine the effect based on the item and context:
     - **Healing/Consumable**: Recover HP/Sanity and consume the item (return 'item_update' with negative quantity).
     - **Key Item**: If it solves a puzzle or helps the NPC, trigger a positive outcome.
     - **Irrelevant**: If the item has no use here, describe the failure but do not consume it (unless it's a one-time use thing that was wasted).
+
+**Critical: Inventory Integration in Choices:**
+- **Check Inventory**: Always look at the "Inventory" provided in the [SYSTEM DATA].
+- **Generate Options**: If the player has an item that is relevant to the current situation (e.g., "Camera" to take a photo of a ghost, "Water" to give to a thirsty NPC, "Stick" to climb), YOU MUST generate a specific choice option for it.
+- **Choice Type**: Mark these choices with 'type': 'use_item'.
+- **Text Format**: The choice text should be clear, e.g., "使用相机拍照" or "拿出登山杖".
 
 **Stats & Inventory Context:**
 - You will receive the player's current status and inventory in the prompt. USE THIS to determine if they can actually perform actions or if specific dialogue options should appear.
@@ -137,7 +144,10 @@ export class GeminiService {
     if (context) {
         // We invisibly append the context to the user message so Gemini knows the state
         // This helps it validate item usage or generate context-aware choices
-        const inventoryStr = context.inventory.map(i => `${i.name} x${i.quantity}`).join(', ');
+        const inventoryStr = context.inventory.length > 0 
+           ? context.inventory.map(i => `${i.name} x${i.quantity}`).join(', ')
+           : "None";
+           
         finalPrompt = `${action}\n\n[SYSTEM DATA - Current State]\nLocation: ${context.stats.location}\nHealth: ${context.stats.health}\nSanity: ${context.stats.sanity}\nInventory: [${inventoryStr}]`;
     }
 

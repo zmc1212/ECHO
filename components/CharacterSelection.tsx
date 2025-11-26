@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { CharacterPreset } from '../types';
 import { audioService } from '../services/audioService';
 
@@ -14,7 +15,12 @@ const CHARACTERS: CharacterPreset[] = [
     description: '充满好奇心的大学生。体能充沛，但性格有些急躁。来九真山是为了打卡拍照。',
     color: 'text-cyan-500 border-cyan-500/50 bg-cyan-950/30',
     stats: { health: 120, sanity: 80 },
-    inventory: [{ id: 'itm_camera', name: '单反相机', quantity: 1 }]
+    inventory: [{ id: 'itm_camera', name: '单反相机', quantity: 1 }],
+    lore: [
+       "秘密: 他的相机里其实只有一张照片，是他前女友的背影。",
+       "状态: 昨晚只睡了3小时，靠功能饮料维持清醒。",
+       "目标: 只要能拍到一张爆款照片发朋友圈，怎么都行。"
+    ]
   },
   {
     id: 'char_pro',
@@ -23,7 +29,12 @@ const CHARACTERS: CharacterPreset[] = [
     description: '长期加班的企业高管。身体亚健康，但处事冷静。希望能在这里寻找养生之道。',
     color: 'text-amber-500 border-amber-500/50 bg-amber-950/30',
     stats: { health: 70, sanity: 110 },
-    inventory: [{ id: 'itm_thermos', name: '保温杯', quantity: 1 }]
+    inventory: [{ id: 'itm_thermos', name: '保温杯', quantity: 1 }],
+    lore: [
+      "习惯: 每隔15分钟就会下意识地看一眼手腕，即使没戴表。",
+      "背包: 保温杯里装的不是茶，而是高浓度的黑咖啡。",
+      "恐惧: 最怕听到的声音是手机默认的来电铃声。"
+    ]
   },
   {
     id: 'char_elder',
@@ -32,13 +43,24 @@ const CHARACTERS: CharacterPreset[] = [
     description: '退休的大学教授。博古通今，身体虽弱但精神矍铄。对道家文化颇有研究。',
     color: 'text-green-500 border-green-500/50 bg-green-950/30',
     stats: { health: 60, sanity: 140 },
-    inventory: [{ id: 'itm_stick', name: '登山杖', quantity: 1 }]
+    inventory: [{ id: 'itm_stick', name: '登山杖', quantity: 1 }],
+    lore: [
+      "传闻: 据说他年轻时曾登上过昆仑山的无人区。",
+      "收藏: 随身带着一本发黄的《道德经》，上面写满了批注。",
+      "体质: 虽然看着瘦弱，但走起山路来比年轻人还稳。"
+    ]
   }
 ];
 
 const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => {
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loreIndex, setLoreIndex] = useState(0);
+
+  useEffect(() => {
+    // Randomize which lore snippet is shown per session
+    setLoreIndex(Math.floor(Math.random() * 3));
+  }, []);
 
   const handleCardClick = (char: CharacterPreset) => {
     if (!revealed[char.id]) {
@@ -108,6 +130,11 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => 
                     <div className="font-['Share_Tech_Mono'] text-gray-500 text-lg animate-pulse">LOADING</div>
                     <div className="font-['Share_Tech_Mono'] text-gray-700 text-xs mt-0 md:mt-2">USER_PROFILE_0{index + 1}</div>
                   </div>
+
+                   {/* Hover Secret (Desktop only) */}
+                  <div className="hidden md:block absolute bottom-4 text-[10px] font-['Share_Tech_Mono'] text-red-900 opacity-0 group-hover:opacity-100 transition-opacity">
+                      DATA_LEAK: SEGMENT_{loreIndex + 1}
+                  </div>
                 </div>
 
                 {/* FRONT OF CARD (Revealed State) */}
@@ -115,16 +142,22 @@ const CharacterSelection: React.FC<CharacterSelectionProps> = ({ onSelect }) => 
                    {/* Holographic overlay */}
                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.05)_50%,rgba(255,255,255,0)_100%)] bg-[length:100%_4px] pointer-events-none z-0 opacity-20"></div>
                    
-                   <div className="relative z-10 flex-1 flex flex-row md:flex-col justify-between md:justify-start items-center md:items-stretch gap-4 md:gap-0">
+                   <div className="relative z-10 flex-1 flex flex-row md:flex-col justify-between md:justify-start items-center md:items-stretch gap-4 md:gap-0 min-h-0">
                       
                       {/* Left Side (Mobile) / Top (Desktop) */}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 flex flex-col">
                         <div className="text-[10px] md:text-xs font-['Share_Tech_Mono'] opacity-70 mb-0 md:mb-1">ARCHETYPE: {char.role}</div>
                         <h3 className="text-lg md:text-2xl font-['Noto_Serif_SC'] font-bold mb-1 md:mb-4 border-b border-current/30 md:border-current pb-1 md:pb-2 truncate">{char.name}</h3>
                         
-                        {/* Description - Hidden on Mobile unless enough space, or simplified */}
-                        <div className="hidden md:block flex-1 text-sm font-['Noto_Serif_SC'] opacity-90 leading-relaxed">
+                        {/* Description */}
+                        <div className="hidden md:block flex-1 text-sm font-['Noto_Serif_SC'] opacity-90 leading-relaxed overflow-y-auto scrollbar-none">
                           {char.description}
+                        </div>
+
+                        {/* Lore Snippet (Visible on hover/reveal) */}
+                        <div className="hidden md:block mt-4 p-2 bg-black/20 border border-dashed border-current/30 text-xs font-['Noto_Serif_SC'] italic opacity-80">
+                           <span className="font-['Share_Tech_Mono'] text-[10px] opacity-50 block mb-1">SECRET_NOTE //</span>
+                           "{char.lore?.[loreIndex]}"
                         </div>
                       </div>
 
