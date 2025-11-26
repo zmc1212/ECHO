@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import CRTLayer from './components/CRTLayer';
 import TerminalOutput from './components/TerminalOutput';
@@ -6,7 +7,8 @@ import ChoicePanel from './components/ChoicePanel';
 import CharacterSelection from './components/CharacterSelection';
 import GameOver from './components/GameOver';
 import Toast from './components/Toast';
-import SceneScanner from './components/SceneScanner'; // Import new component
+import SceneScanner from './components/SceneScanner';
+import ScanModal from './components/ScanModal'; // Import ScanModal
 import { geminiService } from './services/geminiService';
 import { audioService } from './services/audioService';
 import { Message, GameStatus, PlayerStats, InventoryItem, CharacterPreset, SceneObject } from './types';
@@ -14,7 +16,7 @@ import { Message, GameStatus, PlayerStats, InventoryItem, CharacterPreset, Scene
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [choices, setChoices] = useState<any[]>([]);
-  const [sceneObjects, setSceneObjects] = useState<SceneObject[]>([]); // New state
+  const [sceneObjects, setSceneObjects] = useState<SceneObject[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   
@@ -22,6 +24,9 @@ const App: React.FC = () => {
   const [isShaking, setIsShaking] = useState(false);
   const [showDamageOverlay, setShowDamageOverlay] = useState(false);
   const [toast, setToast] = useState<{msg: string, type: 'info' | 'warning' | 'item'} | null>(null);
+
+  // Modal State
+  const [scanModalData, setScanModalData] = useState<{title: string, content: string} | null>(null);
 
   // Mobile State
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
@@ -88,6 +93,7 @@ const App: React.FC = () => {
     setSceneObjects([]);
     setInventory([]);
     setIsMobileStatsOpen(false);
+    setScanModalData(null);
   };
 
   // Typewriter effect handler
@@ -128,8 +134,55 @@ const App: React.FC = () => {
     setTimeout(() => setShowDamageOverlay(false), 800); // Fade out red
   };
 
-  const handleScan = (obj: SceneObject) => {
-     handleAction(`系统扫描目标：${obj.name}`);
+  const handleScan = async (obj: SceneObject) => {
+     // Trigger scanning feedback
+     audioService.playReveal();
+     setIsProcessing(true);
+     
+     try {
+       // We invoke a special action to get the description, but we DON'T add it to the terminal history
+       // This keeps the modal feeling like an overlay inspection
+       const actionText = `系统扫描目标：${obj.name}`;
+       const response = await geminiService.sendAction(actionText, { stats, inventory });
+
+       // Update background state if the scan caused changes (e.g. found item)
+       if (response.stats_update) {
+          setStats(prev => ({ ...prev, ...response.stats_update }));
+       }
+       if (response.item_update) {
+         setInventory(prev => {
+          const newInv = [...prev];
+          response.item_update?.forEach(newItem => {
+            const existing = newInv.find(i => i.name === newItem.name);
+            if (newItem.quantity > 0) {
+              setToast({ msg: `扫描发现: ${newItem.name}`, type: 'info' });
+            }
+            if (existing) {
+              existing.quantity += newItem.quantity;
+            } else {
+              if (newItem.quantity > 0) newInv.push(newItem);
+            }
+          });
+          return newInv.filter(i => i.quantity > 0);
+        });
+       }
+
+       // Show the result in the Modal
+       setScanModalData({
+         title: obj.name,
+         content: response.narrative
+       });
+
+       // Update choices in the background so when modal closes, player has updated options
+       // But we DON'T typeWriter the narrative into the main log
+       setChoices(response.choices);
+       
+     } catch (error) {
+       console.error("Scan failed", error);
+       setToast({ msg: "扫描数据损坏", type: 'warning' });
+     } finally {
+       setIsProcessing(false);
+     }
   };
 
   const handleUseItem = (item: InventoryItem) => {
@@ -137,16 +190,14 @@ const App: React.FC = () => {
   };
 
   const handleAction = async (actionText: string) => {
-    // 1. Play sound & UI update
     if (gameStatus === GameStatus.RUNNING) {
-      // audioService.playBoot(); // Removed redundant call
+      // audioService.playBoot(); 
     }
     setIsProcessing(true);
-    setChoices([]); // Clear previous choices
-    // Only clear scene objects if moving or taking major action, but usually safer to refresh
+    setChoices([]); 
     setSceneObjects([]); 
 
-    // 2. Add User Message (if not initial boot)
+    // Add User Message (if not initial boot)
     if (actionText !== "进入九真山景区") {
       setMessages(prev => [...prev, {
         id: Math.random().toString(),
@@ -157,74 +208,56 @@ const App: React.FC = () => {
     }
 
     try {
-      // 3. Call AI - PASSING CURRENT CONTEXT (Stats + Inventory)
       const response = await geminiService.sendAction(actionText, { stats, inventory });
 
-      // 4. Update Stats if present
       if (response.stats_update) {
         setStats(prev => {
           let newHealth = prev.health;
-          
-          // Check for damage
           if (response.stats_update?.health !== undefined) {
              newHealth = response.stats_update.health;
              if (newHealth < prev.health) {
                 triggerDamageEffect();
              }
           }
-          
-          // CRITICAL: Check for death
           if (newHealth <= 0) {
             setGameStatus(GameStatus.TERMINATED);
-            // We still update state to 0 for display
             return { ...prev, ...response.stats_update, health: 0 };
           }
-
           return { ...prev, ...response.stats_update };
         });
       }
 
-      // If terminated, stop processing (don't show narrative/choices)
       if (gameStatus === GameStatus.TERMINATED) {
          setIsProcessing(false);
          return; 
       }
 
-      // 5. Update Inventory if present
       if (response.item_update) {
         setInventory(prev => {
           const newInv = [...prev];
           response.item_update?.forEach(newItem => {
             const existing = newInv.find(i => i.name === newItem.name);
-            
-            // Check for item usage (negative quantity)
             if (newItem.quantity < 0) {
               setToast({ msg: `已消耗: ${newItem.name}`, type: 'item' });
               audioService.playItemUse();
             } else if (newItem.quantity > 0) {
               setToast({ msg: `获得道具: ${newItem.name}`, type: 'info' });
             }
-
             if (existing) {
               existing.quantity += newItem.quantity;
             } else {
               if (newItem.quantity > 0) newInv.push(newItem);
             }
           });
-          // Filter out 0 quantity items
           return newInv.filter(i => i.quantity > 0);
         });
       }
 
-      // 6. Update Scene Objects
       if (response.scene_objects) {
          setSceneObjects(response.scene_objects);
       }
 
-      // 7. Type out narrative
       await typeWriterEffect(response.narrative, Math.random().toString());
-
-      // 8. Show Choices
       setChoices(response.choices);
 
     } catch (error) {
@@ -244,7 +277,7 @@ const App: React.FC = () => {
   return (
     <CRTLayer className={isShaking ? "animate-shake" : ""}>
       
-      {/* Damage Overlay (Blood Flash) */}
+      {/* Damage Overlay */}
       {showDamageOverlay && (
         <div className="absolute inset-0 bg-red-900/40 pointer-events-none z-50 animate-blood-flash mix-blend-overlay"></div>
       )}
@@ -255,6 +288,15 @@ const App: React.FC = () => {
           message={toast.msg} 
           type={toast.type} 
           onClose={() => setToast(null)} 
+        />
+      )}
+
+      {/* Scan Result Modal */}
+      {scanModalData && (
+        <ScanModal 
+          title={scanModalData.title} 
+          content={scanModalData.content} 
+          onClose={() => setScanModalData(null)} 
         />
       )}
 
@@ -279,7 +321,6 @@ const App: React.FC = () => {
               </div>
               
               <div className="flex flex-col items-end gap-1 text-xs font-['Share_Tech_Mono'] text-amber-700 shrink-0">
-                {/* Mobile Stats Toggle */}
                 <button 
                    onClick={() => setIsMobileStatsOpen(true)}
                    className="lg:hidden text-amber-500 border border-amber-500/50 px-2 py-0.5 mb-1 bg-amber-950/30 hover:bg-amber-900/50 active:scale-95 transition-all"
@@ -296,14 +337,12 @@ const App: React.FC = () => {
 
             {/* Terminal Output */}
             <div className="flex-1 flex flex-col min-h-0 relative">
-               {/* Gradient fade at top */}
                <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-black to-transparent pointer-events-none z-10"></div>
-               
                <TerminalOutput messages={messages} />
             </div>
 
             {/* Interaction Area */}
-            <div className="shrink-0 pt-4 pb-safe-bottom min-h-[180px]">
+            <div className="shrink-0 pt-4 pb-safe-bottom min-h-[180px] h-[40vh] md:h-[30vh] overflow-y-auto min-h-[260px]">
               {isProcessing || isTyping ? (
                  <div className="h-full flex flex-col items-center justify-center text-amber-900/50 font-['Share_Tech_Mono'] animate-pulse gap-2">
                    <div className="w-12 h-1 bg-amber-900/50 animate-[scanline_1s_infinite]"></div>
@@ -311,14 +350,12 @@ const App: React.FC = () => {
                  </div>
               ) : (
                 <>
-                 {/* Scene Scanner (AR HUD) */}
                  <SceneScanner 
                     objects={sceneObjects} 
                     onScan={handleScan} 
                     disabled={isProcessing} 
                  />
                  
-                 {/* Action Choices */}
                  <ChoicePanel 
                    choices={choices} 
                    onSelect={handleAction} 
@@ -329,7 +366,6 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Side Panel (Desktop: Fixed / Mobile: Drawer) */}
           <StatusPanel 
             stats={stats} 
             inventory={inventory} 
@@ -341,7 +377,6 @@ const App: React.FC = () => {
         </div>
       )}
       
-      {/* Mobile Stats Floating Overlay (Quick View) */}
       {gameStatus === GameStatus.RUNNING && !isMobileStatsOpen && (
         <div className="lg:hidden absolute top-4 right-2 text-[10px] font-['Share_Tech_Mono'] flex flex-col items-end gap-1 z-0 pointer-events-none opacity-50">
            <span className="text-amber-600">HP: {stats.health}%</span>
