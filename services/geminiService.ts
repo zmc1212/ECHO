@@ -110,7 +110,7 @@ export class GeminiService {
   private chat: Chat | null = null;
 
   constructor() {
-    const apiKey = process.env.API_KEY || 'AIzaSyBMX3dBkuGPjouM3WLy-aAxLw5YtvDTr7c';
+    const apiKey = process.env.API_KEY;
     this.ai = new GoogleGenAI({ apiKey });
   }
 
